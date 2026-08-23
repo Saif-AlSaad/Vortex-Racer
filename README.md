@@ -135,8 +135,9 @@ npm run preview
 
 Deploys automatically to **GitHub Pages** via `.github/workflows/deploy.yml` on every push to `main`. Requires Pages source set to **GitHub Actions** in repo Settings.
 
-> Note: `base: "/Vortex-Racer/"` is set in `vite.config.ts` to match the Pages sub-path. Change it if you rename the repo.
+## Author
 
----
-
+*Saif Al Saad* <br>
+Bsc in *Software Engineering* <br>
+Daffodil International University
 *Built with ❤️, neon, and far too much bloom.*

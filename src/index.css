@@ -1,0 +1,119 @@
+@import "tailwindcss";
+
+@theme {
+  --font-arcade: "Bungee", "Space Grotesk", sans-serif;
+  --font-body: "Space Grotesk", sans-serif;
+  --color-ink: #050014;
+  --color-ink-deep: #02000a;
+  --color-cyan: #00f0ff;
+  --color-pink: #ff0055;
+  --color-purple: #7000ff;
+  --color-paper: #ffffff;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  overscroll-behavior: none;
+  font-family: var(--font-body);
+  background: var(--color-ink);
+  color: var(--color-paper);
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ---------- keyframes ---------- */
+
+@keyframes scorePop {
+  0% { transform: scale(1.45); text-shadow: 0 0 20px var(--color-cyan); }
+  100% { transform: scale(1); text-shadow: 0 0 0px var(--color-cyan); }
+}
+
+@keyframes fadeUp {
+  0% { opacity: 0; transform: translateY(18px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeIn {
+  0% { opacity: 0; }
+  100% { opacity: 1; }
+}
+
+@keyframes titleDrop {
+  0% { opacity: 0; transform: translateY(-40px) scale(0.9); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes hintPulse {
+  0%, 100% { opacity: 0.55; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.05); }
+}
+
+@keyframes neonFlicker {
+  0%, 19%, 21%, 23%, 25%, 54%, 56%, 100% {
+    text-shadow:
+      0 0 4px #fff,
+      0 0 11px #fff,
+      0 0 19px #fff,
+      0 0 40px var(--color-pink),
+      0 0 80px var(--color-pink),
+      0 0 90px var(--color-pink),
+      0 0 100px var(--color-pink),
+      0 0 150px var(--color-pink);
+  }
+  20%, 24%, 55% {
+    text-shadow: none;
+  }
+}
+
+/* ---------- helper classes ---------- */
+
+.font-arcade { font-family: var(--font-arcade); }
+
+.neon-text-pink {
+  color: #fff;
+  animation: neonFlicker 3s infinite alternate;
+}
+
+.neon-text-cyan {
+  color: #fff;
+  text-shadow:
+    0 0 4px #fff,
+    0 0 11px #fff,
+    0 0 19px #fff,
+    0 0 40px var(--color-cyan),
+    0 0 80px var(--color-cyan);
+}
+
+.neon-border-cyan {
+  border: 2px solid var(--color-cyan);
+  box-shadow:
+    0 0 10px var(--color-cyan),
+    inset 0 0 10px var(--color-cyan);
+}
+
+.neon-border-pink {
+  border: 2px solid var(--color-pink);
+  box-shadow:
+    0 0 10px var(--color-pink),
+    inset 0 0 10px var(--color-pink);
+}
+
+.btn-arcade {
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.15s ease;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+.btn-arcade:hover { transform: scale(1.05); }
+.btn-arcade:active { transform: scale(0.95); }
+
+.animate-score-pop { animation: scorePop 0.28s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.animate-fade-up { animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.animate-fade-in { animation: fadeIn 0.4s ease-out both; }
+.animate-title-drop { animation: titleDrop 0.8s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.animate-hint { animation: hintPulse 1.6s ease-in-out infinite; }

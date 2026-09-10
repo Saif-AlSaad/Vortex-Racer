@@ -1,0 +1,18 @@
+{
+  "name": "VORTEX RACER — Neon Highspeed Dodge",
+  "short_name": "Vortex Racer",
+  "description": "Highspeed neon arcade tunnel racer. Dodge obstacles, collect gems, chase high scores.",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "any",
+  "background_color": "#050014",
+  "theme_color": "#050014",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' fill='%23050014'/><circle cx='256' cy='256' r='200' fill='none' stroke='%237000ff' stroke-width='14'/><polygon points='256,120 340,360 256,310 172,360' fill='%2300f0ff'/></svg>",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

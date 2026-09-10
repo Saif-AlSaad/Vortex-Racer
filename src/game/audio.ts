@@ -31,7 +31,18 @@ export class SoundKit {
       this.engineGain.connect(this.master);
       this.engineOsc.start();
     }
-    if (this.ctx.state === "suspended") void this.ctx.resume();
+    if (this.ctx.state === "suspended") {
+      void this.ctx.resume();
+    }
+  }
+
+  handleVisibilityChange(visible: boolean) {
+    if (!this.ctx) return;
+    if (visible && this.ctx.state === "suspended" && !this.muted) {
+      void this.ctx.resume();
+    } else if (!visible && this.ctx.state === "running") {
+      void this.ctx.suspend();
+    }
   }
 
   setMuted(m: boolean) {
@@ -90,7 +101,6 @@ export class SoundKit {
 
   collect() {
     if (!this.ctx) return;
-    const t0 = this.ctx.currentTime;
     // Chime
     this.playTone("sine", 880, 1760, 0.15, 0.4);
     setTimeout(() => this.playTone("sine", 1100, 2200, 0.2, 0.3), 50);

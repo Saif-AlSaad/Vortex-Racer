@@ -15,16 +15,22 @@ html,
 body,
 #root {
   height: 100%;
+  width: 100%;
   margin: 0;
+  padding: 0;
   overflow: hidden;
   overscroll-behavior: none;
   font-family: var(--font-body);
   background: var(--color-ink);
   color: var(--color-paper);
+  touch-action: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 * {
   -webkit-tap-highlight-color: transparent;
+  box-sizing: border-box;
 }
 
 /* ---------- keyframes ---------- */
@@ -102,6 +108,13 @@ body,
   box-shadow:
     0 0 10px var(--color-pink),
     inset 0 0 10px var(--color-pink);
+}
+
+.neon-border-purple {
+  border: 2px solid var(--color-purple);
+  box-shadow:
+    0 0 10px var(--color-purple),
+    inset 0 0 10px var(--color-purple);
 }
 
 .btn-arcade {

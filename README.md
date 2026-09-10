@@ -16,13 +16,19 @@ A neon, arcade-style endless tunnel racer built with **React + Three.js**. Pilot
 | ⚡ **Speed** | Starts at 40 u/s and ramps up forever — every gem makes you faster. |
 | 🏆 **Best score** | Saved in `localStorage` so it survives page reloads. |
 
-## Controls
+## Controls & Mobile Support
 
-| Input | Action |
+| Input / Feature | Action |
 |---|---|
-| **Drag horizontally** (mouse / touch) | Steer around the tunnel wall |
-| **← / →** or **A / D** | Keyboard steering |
-| **Space** or **Enter** | Start / restart from menu & game-over screens |
+| **Virtual Touchpads** (Mobile) | Press / hold bottom **LEFT** & **RIGHT** neon pads to steer |
+| **Drag horizontally** (mouse / touch) | Steer smoothly around the tunnel wall |
+| **Tilt / Gyroscope** (Mobile) | Toggle the **Gyro icon** in HUD to steer by physically tilting your phone |
+| **← / →** or **A / D** (Desktop) | Keyboard steering |
+| **Space** or **Enter** (Desktop) | Start / restart from menu & game-over screens |
+| **Fullscreen button** | Toggle full-screen mode for an immersive native app feel |
+| **Haptic Feedback** (Android) | Tactile vibrations on gem pickups and explosive crashes |
+| **Screen Wake Lock** (Mobile) | Keeps screen active while in a run |
+| **PWA Installable** (Android) | Add to Home Screen in Chrome for standalone full-screen play |
 | **Speaker button** | Toggle mute (persisted) |
 
 ## Tech Stack

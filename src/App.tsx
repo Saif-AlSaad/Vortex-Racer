@@ -15,6 +15,8 @@ export default function App() {
   const [result, setResult] = useState<GameResult | null>(null);
   const [muted, setMuted] = useState(() => localStorage.getItem(MUTE_KEY) === "1");
   const [showHint, setShowHint] = useState(true);
+  const [isFullscreen, setIsFullscreen] = useState(() => typeof document !== "undefined" && Boolean(document.fullscreenElement));
+  const [tiltEnabled, setTiltEnabled] = useState(false);
 
   useEffect(() => {
     const el = containerRef.current;
@@ -60,6 +62,41 @@ export default function App() {
     });
   }, []);
 
+  const toggleFullscreen = useCallback(() => {
+    if (typeof document === "undefined") return;
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    const onFsChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener("fullscreenchange", onFsChange);
+    return () => document.removeEventListener("fullscreenchange", onFsChange);
+  }, []);
+
+  const toggleTilt = useCallback(() => {
+    setTiltEnabled((prev) => {
+      const next = !prev;
+      engineRef.current?.setTiltEnabled(next);
+      return next;
+    });
+  }, []);
+
+  const steerLeft = useCallback((active: boolean) => {
+    engineRef.current?.steerLeft(active);
+  }, []);
+
+  const steerRight = useCallback((active: boolean) => {
+    engineRef.current?.steerRight(active);
+  }, []);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.code !== "Space" && e.code !== "Enter") return;
@@ -82,11 +119,24 @@ export default function App() {
           showHint={showHint && phase === "playing"}
           muted={muted}
           onToggleMute={toggleMute}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
+          tiltEnabled={tiltEnabled}
+          onToggleTilt={toggleTilt}
+          onSteerLeft={steerLeft}
+          onSteerRight={steerRight}
         />
       )}
 
       {phase === "menu" && (
-        <StartScreen best={best} muted={muted} onToggleMute={toggleMute} onStart={start} />
+        <StartScreen
+          best={best}
+          muted={muted}
+          onToggleMute={toggleMute}
+          isFullscreen={isFullscreen}
+          onToggleFullscreen={toggleFullscreen}
+          onStart={start}
+        />
       )}
 
       {phase === "over" && result && (

@@ -79,8 +79,14 @@ export class VortexEngine {
 
   // Inputs
   private pointerDown = false;
+  private activePointerId: number | null = null;
   private lastPointerX = 0;
-  private keys = { left: false, right: false };
+  private keys = { left: false, right: false, touchLeft: false, touchRight: false };
+
+  // Mobile features
+  private wakeLock: any = null;
+  private tiltEnabled = false;
+  private orientationListenerAttached = false;
 
   constructor(container: HTMLElement, cb: EngineCallbacks) {
     this.container = container;
@@ -111,8 +117,10 @@ export class VortexEngine {
 
     this.ro = new ResizeObserver(() => this.resize());
     this.ro.observe(container);
+    this.resize();
     
     this.setupInputs();
+    document.addEventListener("visibilitychange", this.handleVisibilityChange);
 
     this.lastTime = performance.now();
     this.raf = requestAnimationFrame(this.loop);
@@ -156,19 +164,30 @@ export class VortexEngine {
 
   private setupInputs() {
     this.container.addEventListener("pointerdown", (e) => {
-      this.pointerDown = true;
-      this.lastPointerX = e.clientX;
       this.sound.ensure();
-    });
-    window.addEventListener("pointermove", (e) => {
-      if (!this.pointerDown || this.phase === "over") return;
-      const dx = e.clientX - this.lastPointerX;
-      this.targetAngle -= dx * 0.008;
+      const target = e.target as HTMLElement | null;
+      if (target?.closest("button, [data-no-drag]")) return;
+      this.pointerDown = true;
+      this.activePointerId = e.pointerId;
       this.lastPointerX = e.clientX;
     });
-    window.addEventListener("pointerup", () => {
-      this.pointerDown = false;
+
+    window.addEventListener("pointermove", (e) => {
+      if (!this.pointerDown || this.phase === "over" || e.pointerId !== this.activePointerId) return;
+      const dx = e.clientX - this.lastPointerX;
+      this.targetAngle -= dx * 0.007;
+      this.lastPointerX = e.clientX;
     });
+
+    const endPointer = (e: PointerEvent) => {
+      if (e.pointerId === this.activePointerId) {
+        this.pointerDown = false;
+        this.activePointerId = null;
+      }
+    };
+    window.addEventListener("pointerup", endPointer);
+    window.addEventListener("pointercancel", endPointer);
+
     window.addEventListener("keydown", (e) => {
       if (e.code === "ArrowLeft" || e.code === "KeyA") this.keys.left = true;
       if (e.code === "ArrowRight" || e.code === "KeyD") this.keys.right = true;
@@ -282,6 +301,94 @@ export class VortexEngine {
 
   // ---- API ----
 
+  steerLeft(active: boolean) {
+    this.keys.touchLeft = active;
+    if (active) {
+      this.sound.ensure();
+      this.vibrate(12);
+    }
+  }
+
+  steerRight(active: boolean) {
+    this.keys.touchRight = active;
+    if (active) {
+      this.sound.ensure();
+      this.vibrate(12);
+    }
+  }
+
+  steerDelta(delta: number) {
+    this.targetAngle -= delta;
+  }
+
+  setTiltEnabled(enabled: boolean) {
+    this.tiltEnabled = enabled;
+    if (typeof window === "undefined") return;
+    if (enabled && !this.orientationListenerAttached) {
+      window.addEventListener("deviceorientation", this.handleDeviceOrientation);
+      this.orientationListenerAttached = true;
+    } else if (!enabled && this.orientationListenerAttached) {
+      window.removeEventListener("deviceorientation", this.handleDeviceOrientation);
+      this.orientationListenerAttached = false;
+    }
+  }
+
+  getTiltEnabled(): boolean {
+    return this.tiltEnabled;
+  }
+
+  private vibrate(pattern: number | number[]) {
+    if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+      try {
+        navigator.vibrate(pattern);
+      } catch {}
+    }
+  }
+
+  private async requestWakeLock() {
+    if (typeof navigator !== "undefined" && "wakeLock" in navigator) {
+      try {
+        this.wakeLock = await navigator.wakeLock.request("screen");
+      } catch {}
+    }
+  }
+
+  private releaseWakeLock() {
+    if (this.wakeLock) {
+      try {
+        void this.wakeLock.release();
+      } catch {}
+      this.wakeLock = null;
+    }
+  }
+
+  private handleVisibilityChange = () => {
+    const isVisible = document.visibilityState === "visible";
+    this.sound.handleVisibilityChange(isVisible);
+    if (isVisible && this.phase === "playing") {
+      void this.requestWakeLock();
+    } else {
+      this.releaseWakeLock();
+    }
+  };
+
+  private handleDeviceOrientation = (e: DeviceOrientationEvent) => {
+    if (!this.tiltEnabled || this.phase !== "playing") return;
+    let tilt = 0;
+    const orientation = window.screen?.orientation?.type || "";
+    if (orientation.includes("landscape-secondary")) {
+      tilt = -(e.beta ?? 0);
+    } else if (orientation.includes("landscape")) {
+      tilt = e.beta ?? 0;
+    } else {
+      tilt = e.gamma ?? 0;
+    }
+    if (Math.abs(tilt) > 2.5) {
+      const steerSpeed = (tilt / 30) * 3.6;
+      this.targetAngle -= steerSpeed * 0.016;
+    }
+  };
+
   startGame() {
     this.sound.ensure();
     this.resetWorld();
@@ -289,6 +396,7 @@ export class VortexEngine {
     this.speed = this.baseSpeed;
     this.phase = "playing";
     this.cb.onScore(this.score);
+    void this.requestWakeLock();
   }
 
   toMenu() {
@@ -296,6 +404,7 @@ export class VortexEngine {
     this.phase = "menu";
     this.speed = this.baseSpeed * 0.5;
     this.sound.stopEngine();
+    this.releaseWakeLock();
   }
 
   setMuted(m: boolean) {
@@ -308,6 +417,12 @@ export class VortexEngine {
     this.ro.disconnect();
     this.sound.dispose();
     this.renderer.dispose();
+    this.releaseWakeLock();
+    document.removeEventListener("visibilitychange", this.handleVisibilityChange);
+    if (this.orientationListenerAttached) {
+      window.removeEventListener("deviceorientation", this.handleDeviceOrientation);
+      this.orientationListenerAttached = false;
+    }
     if (this.renderer.domElement.parentElement) {
       this.renderer.domElement.parentElement.removeChild(this.renderer.domElement);
     }
@@ -316,9 +431,17 @@ export class VortexEngine {
   private resize() {
     const w = this.container.clientWidth;
     const h = this.container.clientHeight;
+    if (w === 0 || h === 0) return;
     this.renderer.setSize(w, h);
     this.composer.setSize(w, h);
-    this.camera.aspect = w / h;
+    const aspect = w / h;
+    this.camera.aspect = aspect;
+    // Dynamic FOV for mobile portrait screens (keeps tunnel open and visible)
+    if (aspect < 1) {
+      this.camera.fov = 75 + Math.min(22, (1 - aspect) * 25);
+    } else {
+      this.camera.fov = 75;
+    }
     this.camera.updateProjectionMatrix();
   }
 
@@ -330,8 +453,10 @@ export class VortexEngine {
 
     // Movement
     if (this.phase !== "over") {
-      if (this.keys.left) this.targetAngle += 3 * dt;
-      if (this.keys.right) this.targetAngle -= 3 * dt;
+      const turningLeft = this.keys.left || this.keys.touchLeft;
+      const turningRight = this.keys.right || this.keys.touchRight;
+      if (turningLeft) this.targetAngle += 3.4 * dt;
+      if (turningRight) this.targetAngle -= 3.4 * dt;
       
       // Keep angles in check
       this.targetAngle = this.targetAngle % (Math.PI * 2);
@@ -387,6 +512,7 @@ export class VortexEngine {
           obs.active = false;
           if (obs.type === "gem") {
             this.sound.collect();
+            this.vibrate(18);
             this.scene.remove(obs.mesh);
             this.score += 10;
             this.speed += 2; // Speed up
@@ -395,6 +521,8 @@ export class VortexEngine {
           } else {
             // Crash
             this.sound.crash();
+            this.vibrate([45, 50, 110]);
+            this.releaseWakeLock();
             this.shake = 1;
             this.phase = "over";
             this.ship.visible = false;

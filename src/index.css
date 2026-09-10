@@ -117,6 +117,27 @@ body,
     inset 0 0 10px var(--color-purple);
 }
 
+.neon-border-emerald {
+  border: 2px solid #00ff88;
+  box-shadow:
+    0 0 10px #00ff88,
+    inset 0 0 8px #00ff88;
+}
+
+.neon-border-amber {
+  border: 2px solid #ffcc00;
+  box-shadow:
+    0 0 10px #ffcc00,
+    inset 0 0 8px #ffcc00;
+}
+
+.neon-border-orange {
+  border: 2px solid #ff3300;
+  box-shadow:
+    0 0 12px #ff3300,
+    inset 0 0 8px #ff3300;
+}
+
 .btn-arcade {
   transition: transform 0.12s ease, box-shadow 0.12s ease, background-color 0.15s ease;
   text-transform: uppercase;

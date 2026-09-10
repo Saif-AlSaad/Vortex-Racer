@@ -11,9 +11,13 @@ A neon, arcade-style endless tunnel racer built with **React + Three.js**. Pilot
 | Element | Description |
 |---|---|
 | 🚀 **Your ship** | A cyan cone hugging the inner wall of a spinning neon tunnel. |
-| 🧱 **Red obstacles** | Solid crimson cubes. Touch one → your ship explodes → game over. |
-| 💎 **Cyan gems** | Wireframe octahedrons worth **+10 points each**, plus a small speed boost. |
-| ⚡ **Speed** | Starts at 40 u/s and ramps up forever — every gem makes you faster. |
+| 🧱 **Red obstacles** | Solid crimson cubes. Touch one → your ship explodes (unless shielded or boosting!). |
+| 💎 **Cyan gems** | Wireframe octahedrons worth **+10 to +50 points** based on your active combo multiplier. |
+| 🛡️ **Plasma Shield** | Emerald icosahedron power-up. Forms an energy dome around your ship, absorbing 1 crash. |
+| 🧲 **Vortex Magnet** | Amber torus power-up (6s). Automatically pulls all nearby gems straight to your ship. |
+| 🔥 **Hyper Boost** | Crimson dodecahedron power-up (4s). Surges speed, turns you invincible, and obliterates red walls into fireworks! |
+| ⚡ **Combo System** | Collecting gems in rapid succession builds up to a **x5 multiplier** for huge score runs! |
+| 🎵 **Synthwave OST** | Real-time procedural 80s synthwave beat & bassline that speeds up with game velocity. |
 | 🏆 **Best score** | Saved in `localStorage` so it survives page reloads. |
 
 ## Controls & Mobile Support

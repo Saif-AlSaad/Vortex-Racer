@@ -90,13 +90,19 @@ export default function StartScreen({
             <li className="flex items-start gap-2">
               <span className="mt-0.5 shrink-0 text-pink">❖</span>
               <span>
-                Avoid <strong className="font-semibold text-pink">red obstacles</strong>. Any impact is instant fatal crash.
+                Avoid <strong className="font-semibold text-pink">red obstacles</strong> unless using <strong className="text-orange-400">Hyper Boost</strong> to ram through!
               </span>
             </li>
             <li className="flex items-start gap-2">
               <span className="mt-0.5 shrink-0 text-pink">❖</span>
               <span>
-                Grab <strong className="font-semibold text-cyan">cyan gems</strong> for +10 score & hyper speed boost!
+                Grab <strong className="font-semibold text-cyan">cyan gems</strong> in quick succession for up to <strong className="text-pink">x5 Combo</strong>!
+              </span>
+            </li>
+            <li className="flex items-start gap-2">
+              <span className="mt-0.5 shrink-0 text-pink">❖</span>
+              <span>
+                Equip <strong className="text-emerald-400">🛡️ Shield</strong>, <strong className="text-amber-400">🧲 Magnet</strong>, and <strong className="text-orange-400">🚀 Boost</strong> power-ups!
               </span>
             </li>
           </ul>

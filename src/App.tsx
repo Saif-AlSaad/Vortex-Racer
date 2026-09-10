@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { BEST_KEY, MUTE_KEY, VortexEngine, type GameResult } from "./game/engine";
+import {
+  BEST_KEY,
+  MUTE_KEY,
+  VortexEngine,
+  type GameResult,
+  type PowerUpState,
+} from "./game/engine";
 import Hud from "./ui/Hud";
 import StartScreen from "./ui/StartScreen";
 import GameOverScreen from "./ui/GameOverScreen";
@@ -15,8 +21,19 @@ export default function App() {
   const [result, setResult] = useState<GameResult | null>(null);
   const [muted, setMuted] = useState(() => localStorage.getItem(MUTE_KEY) === "1");
   const [showHint, setShowHint] = useState(true);
-  const [isFullscreen, setIsFullscreen] = useState(() => typeof document !== "undefined" && Boolean(document.fullscreenElement));
+  const [isFullscreen, setIsFullscreen] = useState(
+    () => typeof document !== "undefined" && Boolean(document.fullscreenElement)
+  );
   const [tiltEnabled, setTiltEnabled] = useState(false);
+
+  // Hyperspeed: Combo and Power-Up states
+  const [combo, setCombo] = useState(1);
+  const [comboPercent, setComboPercent] = useState(0);
+  const [powerUps, setPowerUps] = useState<PowerUpState>({
+    shield: false,
+    magnetTime: 0,
+    boostTime: 0,
+  });
 
   useEffect(() => {
     const el = containerRef.current;
@@ -30,6 +47,13 @@ export default function App() {
         setResult(r);
         setBest(r.best);
         setPhase("over");
+      },
+      onCombo: (c: number, percent: number) => {
+        setCombo(c);
+        setComboPercent(percent);
+      },
+      onPowerUps: (pu: PowerUpState) => {
+        setPowerUps(pu);
       },
     });
     engine.setMuted(localStorage.getItem(MUTE_KEY) === "1");
@@ -46,6 +70,9 @@ export default function App() {
     setScore(0);
     setResult(null);
     setShowHint(true);
+    setCombo(1);
+    setComboPercent(0);
+    setPowerUps({ shield: false, magnetTime: 0, boostTime: 0 });
   }, []);
 
   const toMenu = useCallback(() => {
@@ -125,6 +152,9 @@ export default function App() {
           onToggleTilt={toggleTilt}
           onSteerLeft={steerLeft}
           onSteerRight={steerRight}
+          combo={combo}
+          comboPercent={comboPercent}
+          powerUps={powerUps}
         />
       )}
 

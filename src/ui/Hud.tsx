@@ -1,7 +1,12 @@
+import type { PowerUpState } from "../game/engine";
 import {
+  BoltIcon,
   FullscreenEnterIcon,
   FullscreenExitIcon,
   GyroIcon,
+  MagnetIcon,
+  RocketIcon,
+  ShieldIcon,
   SpeakerOffIcon,
   SpeakerOnIcon,
   SteerLeftIcon,
@@ -20,6 +25,9 @@ interface HudProps {
   onToggleTilt: () => void;
   onSteerLeft: (active: boolean) => void;
   onSteerRight: (active: boolean) => void;
+  combo: number;
+  comboPercent: number;
+  powerUps: PowerUpState;
 }
 
 export default function Hud({
@@ -34,69 +42,140 @@ export default function Hud({
   onToggleTilt,
   onSteerLeft,
   onSteerRight,
+  combo,
+  comboPercent,
+  powerUps,
 }: HudProps) {
+  const hasActivePowerUp =
+    powerUps.shield || powerUps.magnetTime > 0 || powerUps.boostTime > 0;
+
   return (
     <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between p-3 sm:p-5 select-none">
-      {/* Top Bar */}
-      <div className="flex items-start justify-between">
-        {/* Best Score Badge */}
-        <div className="-rotate-2 neon-border-cyan bg-ink/85 px-3 py-1.5 backdrop-blur-xs">
-          <div className="text-cyan/60 text-[10px] font-bold tracking-[0.22em]">BEST</div>
-          <div className="font-arcade text-cyan text-xl leading-tight">{best}</div>
-        </div>
+      {/* Top Section */}
+      <div className="flex flex-col gap-2.5">
+        {/* Top Bar */}
+        <div className="flex items-start justify-between">
+          {/* Best Score Badge */}
+          <div className="-rotate-2 neon-border-cyan bg-ink/85 px-3 py-1.5 backdrop-blur-xs">
+            <div className="text-cyan/60 text-[10px] font-bold tracking-[0.22em]">BEST</div>
+            <div className="font-arcade text-cyan text-xl leading-tight">{best}</div>
+          </div>
 
-        {/* Current Score */}
-        <div className="flex flex-col items-center">
-          <div
-            key={score}
-            className="animate-score-pop font-arcade neon-text-cyan leading-none"
-            style={{ fontSize: "clamp(2.8rem, 8vw, 5rem)" }}
-          >
-            {score}
+          {/* Current Score */}
+          <div className="flex flex-col items-center">
+            <div
+              key={score}
+              className="animate-score-pop font-arcade neon-text-cyan leading-none"
+              style={{ fontSize: "clamp(2.8rem, 8vw, 5rem)" }}
+            >
+              {score}
+            </div>
+          </div>
+
+          {/* Action Controls */}
+          <div className="pointer-events-auto flex items-center gap-2">
+            {/* Gyro/Tilt Toggle */}
+            <button
+              type="button"
+              data-no-drag="true"
+              onClick={onToggleTilt}
+              aria-label={tiltEnabled ? "Disable tilt steering" : "Enable tilt steering"}
+              title={tiltEnabled ? "Tilt steering ON" : "Tilt steering OFF"}
+              className={`grid size-11 place-items-center transition-colors backdrop-blur-xs ${
+                tiltEnabled
+                  ? "neon-border-cyan bg-cyan/25 text-cyan"
+                  : "neon-border-cyan bg-ink/85 text-cyan/60 hover:text-cyan hover:bg-cyan/15"
+              }`}
+            >
+              <GyroIcon className="size-5" />
+            </button>
+
+            {/* Fullscreen Toggle */}
+            <button
+              type="button"
+              data-no-drag="true"
+              onClick={onToggleFullscreen}
+              aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+              title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
+              className="grid size-11 place-items-center neon-border-purple bg-ink/85 text-purple hover:bg-purple/20 transition-colors backdrop-blur-xs"
+            >
+              {isFullscreen ? <FullscreenExitIcon className="size-5" /> : <FullscreenEnterIcon className="size-5" />}
+            </button>
+
+            {/* Mute Toggle */}
+            <button
+              type="button"
+              data-no-drag="true"
+              onClick={onToggleMute}
+              aria-label={muted ? "Unmute sound" : "Mute sound"}
+              title={muted ? "Unmute" : "Mute"}
+              className="grid size-11 place-items-center neon-border-pink bg-ink/85 text-pink hover:bg-pink/20 transition-colors backdrop-blur-xs"
+            >
+              {muted ? <SpeakerOffIcon className="size-5" /> : <SpeakerOnIcon className="size-5" />}
+            </button>
           </div>
         </div>
 
-        {/* Action Controls */}
-        <div className="pointer-events-auto flex items-center gap-2">
-          {/* Gyro/Tilt Toggle */}
-          <button
-            type="button"
-            data-no-drag="true"
-            onClick={onToggleTilt}
-            aria-label={tiltEnabled ? "Disable tilt steering" : "Enable tilt steering"}
-            title={tiltEnabled ? "Tilt steering ON" : "Tilt steering OFF"}
-            className={`grid size-11 place-items-center transition-colors backdrop-blur-xs ${
-              tiltEnabled
-                ? "neon-border-cyan bg-cyan/25 text-cyan"
-                : "neon-border-cyan bg-ink/85 text-cyan/60 hover:text-cyan hover:bg-cyan/15"
-            }`}
-          >
-            <GyroIcon className="size-5" />
-          </button>
+        {/* Dynamic Status: Combo Multiplier & Active Power-Ups */}
+        <div className="flex flex-wrap items-center justify-center gap-2.5 pt-1">
+          {/* Combo Multiplier Badge */}
+          {combo > 1 && (
+            <div className="animate-score-pop flex flex-col items-center">
+              <div
+                className={`flex items-center gap-1.5 px-3 py-1 bg-ink/90 rounded-full backdrop-blur-xs shadow-[0_0_15px_#00f0ff] ${
+                  combo >= 5
+                    ? "border-2 border-pink text-pink shadow-[0_0_20px_#ff0055]"
+                    : "neon-border-cyan text-cyan"
+                }`}
+              >
+                <BoltIcon className="size-4 animate-pulse" />
+                <span className="font-arcade text-xs sm:text-sm tracking-wider">
+                  x{combo} {combo >= 5 ? "MAX COMBO!" : "COMBO"}
+                </span>
+              </div>
+              <div className="w-24 h-1.5 bg-ink/80 rounded-full mt-1 overflow-hidden border border-cyan/40">
+                <div
+                  className={`h-full transition-all duration-75 ease-linear ${
+                    combo >= 5 ? "bg-pink shadow-[0_0_8px_#ff0055]" : "bg-cyan shadow-[0_0_8px_#00f0ff]"
+                  }`}
+                  style={{ width: `${Math.max(0, Math.min(1, comboPercent)) * 100}%` }}
+                />
+              </div>
+            </div>
+          )}
 
-          {/* Fullscreen Toggle */}
-          <button
-            type="button"
-            data-no-drag="true"
-            onClick={onToggleFullscreen}
-            aria-label={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-            title={isFullscreen ? "Exit fullscreen" : "Enter fullscreen"}
-            className="grid size-11 place-items-center neon-border-purple bg-ink/85 text-purple hover:bg-purple/20 transition-colors backdrop-blur-xs"
-          >
-            {isFullscreen ? <FullscreenExitIcon className="size-5" /> : <FullscreenEnterIcon className="size-5" />}
-          </button>
+          {/* Active Power-Ups Badges */}
+          {hasActivePowerUp && (
+            <div className="flex items-center gap-2">
+              {/* Plasma Shield */}
+              {powerUps.shield && (
+                <div className="animate-fade-in flex items-center gap-1.5 px-2.5 py-1 rounded-md border-2 border-emerald-400 bg-ink/90 text-emerald-300 shadow-[0_0_15px_rgba(52,211,153,0.5)] backdrop-blur-xs">
+                  <ShieldIcon className="size-4 animate-pulse text-emerald-400" />
+                  <span className="font-arcade text-[10px] sm:text-xs tracking-wide">SHIELD</span>
+                </div>
+              )}
 
-          {/* Mute Toggle */}
-          <button
-            type="button"
-            data-no-drag="true"
-            onClick={onToggleMute}
-            aria-label={muted ? "Unmute sound" : "Mute sound"}
-            title={muted ? "Unmute" : "Mute"}
-            className="grid size-11 place-items-center neon-border-pink bg-ink/85 text-pink hover:bg-pink/20 transition-colors backdrop-blur-xs"
-          >
-            {muted ? <SpeakerOffIcon className="size-5" /> : <SpeakerOnIcon className="size-5" />}
-          </button>
+              {/* Vortex Magnet */}
+              {powerUps.magnetTime > 0 && (
+                <div className="animate-fade-in flex items-center gap-1.5 px-2.5 py-1 rounded-md border-2 border-amber-400 bg-ink/90 text-amber-300 shadow-[0_0_15px_rgba(251,191,36,0.5)] backdrop-blur-xs">
+                  <MagnetIcon className="size-4 animate-spin text-amber-400" style={{ animationDuration: "3s" }} />
+                  <span className="font-arcade text-[10px] sm:text-xs tracking-wide">
+                    MAGNET {powerUps.magnetTime.toFixed(1)}s
+                  </span>
+                </div>
+              )}
+
+              {/* Hyper Boost */}
+              {powerUps.boostTime > 0 && (
+                <div className="animate-fade-in flex items-center gap-1.5 px-2.5 py-1 rounded-md border-2 border-orange-500 bg-ink/90 text-orange-400 shadow-[0_0_20px_rgba(249,115,22,0.8)] backdrop-blur-xs">
+                  <RocketIcon className="size-4 text-orange-400 animate-bounce" />
+                  <span className="font-arcade text-[10px] sm:text-xs tracking-wide">
+                    HYPER BOOST {powerUps.boostTime.toFixed(1)}s
+                  </span>
+                </div>
+              )}
+            </div>
+          )}
         </div>
       </div>
 

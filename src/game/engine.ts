@@ -130,6 +130,7 @@ export class VortexEngine {
   private wallsSmashed = 0;
   private powerUpsUsed = 0;
   private telemetryTimer = 0;
+  private isPaused = false;
 
   private shake = 0;
   private lastTime = performance.now();
@@ -429,6 +430,7 @@ export class VortexEngine {
     this.wallsSmashed = 0;
     this.powerUpsUsed = 0;
     this.telemetryTimer = 0;
+    this.isPaused = false;
 
     // Initial spawn
     for (let i = 0; i < 20; i++) {
@@ -548,10 +550,39 @@ export class VortexEngine {
   toMenu() {
     this.resetWorld();
     this.phase = "menu";
+    this.isPaused = false;
     this.speed = this.baseSpeed * 0.5;
     this.sound.stopEngine();
     this.sound.stopMusic();
     this.releaseWakeLock();
+  }
+
+  pauseGame() {
+    if (this.phase !== "playing" || this.isPaused) return;
+    this.isPaused = true;
+    this.sound.pause();
+    this.releaseWakeLock();
+  }
+
+  resumeGame() {
+    if (this.phase !== "playing" || !this.isPaused) return;
+    this.isPaused = false;
+    this.lastTime = performance.now();
+    this.sound.resume();
+    void this.requestWakeLock();
+  }
+
+  togglePause(): boolean {
+    if (this.isPaused) {
+      this.resumeGame();
+    } else {
+      this.pauseGame();
+    }
+    return this.isPaused;
+  }
+
+  getIsPaused(): boolean {
+    return this.isPaused;
   }
 
   setMuted(m: boolean) {
@@ -599,6 +630,11 @@ export class VortexEngine {
     this.raf = requestAnimationFrame(this.loop);
     const dt = Math.min(0.05, (now - this.lastTime) / 1000);
     this.lastTime = now;
+
+    if (this.isPaused) {
+      this.composer.render();
+      return;
+    }
 
     // Active power-up timers
     if (this.phase === "playing") {

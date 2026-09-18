@@ -120,6 +120,17 @@ export class SoundKit {
     }
   }
 
+  pause() {
+    this.stopEngine();
+    this.stopMusic();
+  }
+
+  resume() {
+    if (!this.muted) {
+      this.startMusic();
+    }
+  }
+
   private scheduleMusicLookahead() {
     if (!this.ctx || !this.musicPlaying) return;
     const lookAheadTime = 0.12;

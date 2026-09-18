@@ -10,6 +10,7 @@ import {
 import Hud from "./ui/Hud";
 import StartScreen from "./ui/StartScreen";
 import GameOverScreen from "./ui/GameOverScreen";
+import PauseMenu from "./ui/PauseMenu";
 
 type Phase = "menu" | "playing" | "over";
 
@@ -26,6 +27,7 @@ export default function App() {
     () => typeof document !== "undefined" && Boolean(document.fullscreenElement)
   );
   const [tiltEnabled, setTiltEnabled] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
 
   // Hyperspeed: Combo and Power-Up states
   const [combo, setCombo] = useState(1);
@@ -56,6 +58,7 @@ export default function App() {
       onGameOver: (r: GameResult) => {
         setResult(r);
         setBest(r.best);
+        setIsPaused(false);
         setPhase("over");
       },
       onCombo: (c: number, percent: number) => {
@@ -80,6 +83,7 @@ export default function App() {
   const start = useCallback(() => {
     engineRef.current?.startGame();
     setPhase("playing");
+    setIsPaused(false);
     setScore(0);
     setResult(null);
     setShowHint(true);
@@ -97,8 +101,27 @@ export default function App() {
 
   const toMenu = useCallback(() => {
     engineRef.current?.toMenu();
+    setIsPaused(false);
     setPhase("menu");
   }, []);
+
+  const resume = useCallback(() => {
+    engineRef.current?.resumeGame();
+    setIsPaused(false);
+  }, []);
+
+  const togglePause = useCallback(() => {
+    if (phase !== "playing") return;
+    setIsPaused((prev) => {
+      const next = !prev;
+      if (next) {
+        engineRef.current?.pauseGame();
+      } else {
+        engineRef.current?.resumeGame();
+      }
+      return next;
+    });
+  }, [phase]);
 
   const toggleMute = useCallback(() => {
     setMuted((m) => {
@@ -146,8 +169,20 @@ export default function App() {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.code !== "Space" && e.code !== "Enter") return;
       if ((e.target as HTMLElement | null)?.tagName === "BUTTON") return;
+      if (e.code === "Escape" || e.code === "KeyP") {
+        if (phase === "playing") {
+          e.preventDefault();
+          togglePause();
+          return;
+        }
+      }
+      if (e.code !== "Space" && e.code !== "Enter") return;
+      if (isPaused) {
+        e.preventDefault();
+        resume();
+        return;
+      }
       if (phase === "menu" || phase === "over") {
         e.preventDefault();
         start();
@@ -155,7 +190,7 @@ export default function App() {
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [phase, start]);
+  }, [phase, isPaused, start, resume, togglePause]);
 
   return (
     <div ref={containerRef} className="relative h-dvh w-screen touch-none overflow-hidden select-none bg-ink">
@@ -176,6 +211,19 @@ export default function App() {
           comboPercent={comboPercent}
           powerUps={powerUps}
           telemetry={telemetry}
+          isPaused={isPaused}
+          onTogglePause={togglePause}
+        />
+      )}
+
+      {phase === "playing" && isPaused && (
+        <PauseMenu
+          score={score}
+          best={best}
+          distance={telemetry.distance}
+          onResume={resume}
+          onRestart={start}
+          onMenu={toMenu}
         />
       )}
 

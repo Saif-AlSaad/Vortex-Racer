@@ -7,6 +7,8 @@ import {
   GyroIcon,
   HazardIcon,
   MagnetIcon,
+  PauseIcon,
+  PlayIcon,
   RocketIcon,
   ShieldIcon,
   SpeakerOffIcon,
@@ -31,6 +33,8 @@ interface HudProps {
   comboPercent: number;
   powerUps: PowerUpState;
   telemetry: TelemetryData;
+  isPaused: boolean;
+  onTogglePause: () => void;
 }
 
 export default function Hud({
@@ -49,6 +53,8 @@ export default function Hud({
   comboPercent,
   powerUps,
   telemetry,
+  isPaused,
+  onTogglePause,
 }: HudProps) {
   const hasActivePowerUp =
     powerUps.shield || powerUps.magnetTime > 0 || powerUps.boostTime > 0;
@@ -153,16 +159,20 @@ export default function Hud({
               {isFullscreen ? <FullscreenExitIcon className="size-5" /> : <FullscreenEnterIcon className="size-5" />}
             </button>
 
-            {/* Mute Toggle */}
+            {/* Pause Toggle */}
             <button
               type="button"
               data-no-drag="true"
-              onClick={onToggleMute}
-              aria-label={muted ? "Unmute sound" : "Mute sound"}
-              title={muted ? "Unmute" : "Mute"}
-              className="grid size-11 place-items-center neon-border-pink bg-ink/85 text-pink hover:bg-pink/20 transition-colors backdrop-blur-xs"
+              onClick={onTogglePause}
+              aria-label={isPaused ? "Resume game" : "Pause game"}
+              title={isPaused ? "Resume (ESC / P)" : "Pause (ESC / P)"}
+              className={`grid size-11 place-items-center transition-colors backdrop-blur-xs ${
+                isPaused
+                  ? "neon-border-cyan bg-cyan/25 text-cyan"
+                  : "neon-border-emerald bg-ink/85 text-emerald-400 hover:bg-emerald-400/20"
+              }`}
             >
-              {muted ? <SpeakerOffIcon className="size-5" /> : <SpeakerOnIcon className="size-5" />}
+              {isPaused ? <PlayIcon className="size-4" /> : <PauseIcon className="size-4" />}
             </button>
           </div>
         </div>

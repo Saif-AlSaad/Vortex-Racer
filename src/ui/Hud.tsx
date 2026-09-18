@@ -1,9 +1,11 @@
-import type { PowerUpState } from "../game/engine";
+import type { PowerUpState, TelemetryData } from "../game/engine";
+import Speedometer from "./Speedometer";
 import {
   BoltIcon,
   FullscreenEnterIcon,
   FullscreenExitIcon,
   GyroIcon,
+  HazardIcon,
   MagnetIcon,
   RocketIcon,
   ShieldIcon,
@@ -28,6 +30,7 @@ interface HudProps {
   combo: number;
   comboPercent: number;
   powerUps: PowerUpState;
+  telemetry: TelemetryData;
 }
 
 export default function Hud({
@@ -45,14 +48,62 @@ export default function Hud({
   combo,
   comboPercent,
   powerUps,
+  telemetry,
 }: HudProps) {
   const hasActivePowerUp =
     powerUps.shield || powerUps.magnetTime > 0 || powerUps.boostTime > 0;
+  const hazard = telemetry.proximityWarning;
+
 
   return (
-    <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between p-3 sm:p-5 select-none">
+    <div className="pointer-events-none absolute inset-0 z-10 flex flex-col justify-between p-3 sm:p-5 select-none overflow-hidden">
+      {/* Sci-Fi Cockpit Reticle & Border Accents */}
+      <div className="pointer-events-none absolute inset-2 sm:inset-4 border border-cyan/10 rounded-2xl sm:rounded-3xl">
+        {/* Top Left Bracket */}
+        <div className="absolute -top-1 -left-1 size-4 sm:size-6 border-t-2 border-l-2 border-cyan shadow-[0_0_8px_#00f0ff]" />
+        <div className="absolute top-1 left-5 sm:left-7 text-[8px] font-mono text-cyan/50 tracking-widest hidden sm:block">
+          SYS:ACTIVE // NAV-LOCK
+        </div>
+
+        {/* Top Right Bracket */}
+        <div className="absolute -top-1 -right-1 size-4 sm:size-6 border-t-2 border-r-2 border-purple shadow-[0_0_8px_#7000ff]" />
+        <div className="absolute top-1 right-5 sm:right-7 text-[8px] font-mono text-purple/50 tracking-widest hidden sm:block">
+          SECTOR-01 // FLOW
+        </div>
+
+        {/* Bottom Left Bracket */}
+        <div className="absolute -bottom-1 -left-1 size-4 sm:size-6 border-b-2 border-l-2 border-cyan shadow-[0_0_8px_#00f0ff]" />
+
+        {/* Bottom Right Bracket */}
+        <div className="absolute -bottom-1 -right-1 size-4 sm:size-6 border-b-2 border-r-2 border-pink shadow-[0_0_8px_#ff0055]" />
+      </div>
+
+      {/* Tactical Hazard Proximity Warning */}
+      {hazard && (
+        <div className="animate-hazard pointer-events-none absolute top-24 sm:top-28 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 rounded-xl border-2 border-pink bg-ink/90 px-3.5 py-1.5 sm:px-4 sm:py-2 text-pink shadow-[0_0_25px_#ff0055] backdrop-blur-md">
+          <HazardIcon className="size-4 sm:size-5 text-pink shrink-0" />
+          <div className="flex flex-col items-center">
+            <span className="font-arcade text-[10px] sm:text-xs tracking-wider">
+              {hazard.direction === "center"
+                ? "⚠ IMPACT WARNING"
+                : hazard.direction === "left"
+                ? "◀ OBSTACLE LEFT"
+                : "OBSTACLE RIGHT ▶"}
+            </span>
+            <span className="text-[8px] sm:text-[9px] font-mono font-bold tracking-widest text-paper/80">
+              RANGE: {hazard.distance}M ·{" "}
+              {hazard.direction === "center"
+                ? "EVADE NOW"
+                : hazard.direction === "left"
+                ? "STEER RIGHT"
+                : "STEER LEFT"}
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Top Section */}
-      <div className="flex flex-col gap-2.5">
+      <div className="relative z-10 flex flex-col gap-2.5">
         {/* Top Bar */}
         <div className="flex items-start justify-between">
           {/* Best Score Badge */}
@@ -181,15 +232,15 @@ export default function Hud({
 
       {/* Middle Hint */}
       {showHint && (
-        <div className="flex justify-center pb-2">
+        <div className="relative z-10 flex justify-center pb-2">
           <div className="animate-hint neon-border-cyan bg-ink/85 px-4 py-2 text-cyan/95 text-[11px] sm:text-xs font-semibold tracking-[0.24em] text-center backdrop-blur-xs shadow-[0_0_15px_rgba(0,240,255,0.3)]">
             HOLD SIDES OR SWIPE TO STEER
           </div>
         </div>
       )}
 
-      {/* Bottom Virtual Steering Controls */}
-      <div className="flex items-end justify-between pb-1 sm:pb-3">
+      {/* Bottom Cockpit Steering Controls & Speedometer */}
+      <div className="relative z-10 flex items-end justify-between gap-2 pb-1 sm:pb-3">
         {/* Steer Left Touch Pad */}
         <button
           type="button"
@@ -205,11 +256,19 @@ export default function Hud({
           }}
           onPointerLeave={() => onSteerLeft(false)}
           onPointerCancel={() => onSteerLeft(false)}
-          className="pointer-events-auto flex size-20 sm:size-24 flex-col items-center justify-center rounded-2xl neon-border-cyan bg-ink/80 text-cyan backdrop-blur-xs transition-all active:scale-95 active:bg-cyan/35 shadow-[0_0_18px_rgba(0,240,255,0.4)]"
+          className="pointer-events-auto flex size-18 sm:size-24 shrink-0 flex-col items-center justify-center rounded-2xl neon-border-cyan bg-ink/80 text-cyan backdrop-blur-xs transition-all active:scale-95 active:bg-cyan/35 shadow-[0_0_18px_rgba(0,240,255,0.4)]"
         >
-          <SteerLeftIcon className="size-8 sm:size-10" />
-          <span className="font-arcade text-[10px] sm:text-xs tracking-widest mt-0.5">LEFT</span>
+          <SteerLeftIcon className="size-7 sm:size-10" />
+          <span className="font-arcade text-[9px] sm:text-xs tracking-widest mt-0.5">LEFT</span>
         </button>
+
+        {/* Center Cockpit Speedometer Gauge */}
+        <Speedometer
+          speed={telemetry.speed}
+          distance={telemetry.distance}
+          isBoosting={telemetry.isBoosting}
+          className="pb-0.5"
+        />
 
         {/* Steer Right Touch Pad */}
         <button
@@ -226,10 +285,10 @@ export default function Hud({
           }}
           onPointerLeave={() => onSteerRight(false)}
           onPointerCancel={() => onSteerRight(false)}
-          className="pointer-events-auto flex size-20 sm:size-24 flex-col items-center justify-center rounded-2xl neon-border-pink bg-ink/80 text-pink backdrop-blur-xs transition-all active:scale-95 active:bg-pink/35 shadow-[0_0_18px_rgba(255,0,85,0.4)]"
+          className="pointer-events-auto flex size-18 sm:size-24 shrink-0 flex-col items-center justify-center rounded-2xl neon-border-pink bg-ink/80 text-pink backdrop-blur-xs transition-all active:scale-95 active:bg-pink/35 shadow-[0_0_18px_rgba(255,0,85,0.4)]"
         >
-          <SteerRightIcon className="size-8 sm:size-10" />
-          <span className="font-arcade text-[10px] sm:text-xs tracking-widest mt-0.5">RIGHT</span>
+          <SteerRightIcon className="size-7 sm:size-10" />
+          <span className="font-arcade text-[9px] sm:text-xs tracking-widest mt-0.5">RIGHT</span>
         </button>
       </div>
     </div>

@@ -8,6 +8,24 @@ export interface GameResult {
   score: number;
   best: number;
   newBest: boolean;
+  distance: number;
+  topSpeed: number;
+  maxCombo: number;
+  gemsCollected: number;
+  wallsSmashed: number;
+  powerUpsUsed: number;
+}
+
+export interface TelemetryData {
+  speed: number;
+  baseSpeed: number;
+  distance: number;
+  isBoosting: boolean;
+  proximityWarning: {
+    distance: number;
+    angleDiff: number;
+    direction: "left" | "right" | "center";
+  } | null;
 }
 
 export interface PowerUpState {
@@ -21,6 +39,7 @@ export interface EngineCallbacks {
   onGameOver: (result: GameResult) => void;
   onCombo?: (combo: number, timePercent: number) => void;
   onPowerUps?: (state: PowerUpState) => void;
+  onTelemetry?: (telemetry: TelemetryData) => void;
 }
 
 export const BEST_KEY = "vortex.best.v1";
@@ -102,6 +121,15 @@ export class VortexEngine {
   private combo = 1;
   private comboTimer = 0;
   private readonly COMBO_DURATION = 2.6;
+
+  // Run Telemetry Statistics
+  private distance = 0;
+  private topSpeed = 40;
+  private maxCombo = 1;
+  private gemsCollected = 0;
+  private wallsSmashed = 0;
+  private powerUpsUsed = 0;
+  private telemetryTimer = 0;
 
   private shake = 0;
   private lastTime = performance.now();
@@ -393,6 +421,15 @@ export class VortexEngine {
     this.combo = 1;
     this.comboTimer = 0;
 
+    // Reset telemetry stats
+    this.distance = 0;
+    this.topSpeed = this.baseSpeed;
+    this.maxCombo = 1;
+    this.gemsCollected = 0;
+    this.wallsSmashed = 0;
+    this.powerUpsUsed = 0;
+    this.telemetryTimer = 0;
+
     // Initial spawn
     for (let i = 0; i < 20; i++) {
       this.spawnObstacle(-50 - i * 30);
@@ -611,6 +648,50 @@ export class VortexEngine {
     const moveZ = effectiveSpeed * dt;
     this.worldZ += moveZ;
 
+    if (this.phase === "playing") {
+      this.distance += moveZ;
+      if (effectiveSpeed > this.topSpeed) this.topSpeed = effectiveSpeed;
+
+      // Throttled Telemetry callback (~12 updates per second)
+      this.telemetryTimer += dt;
+      if (this.telemetryTimer >= 0.08) {
+        this.telemetryTimer = 0;
+
+        // Proximity radar: scan upcoming wall obstacles within 48 units ahead
+        let nearestWall: { dist: number; angleDiff: number; direction: "left" | "right" | "center" } | null = null;
+        let minDist = 48;
+
+        for (const obs of this.obstacles) {
+          if (obs.active && obs.type === "wall" && obs.z < 0 && obs.z > -48) {
+            const dist = -obs.z;
+            let aDiff = obs.angle - this.shipAngle;
+            while (aDiff > Math.PI) aDiff -= Math.PI * 2;
+            while (aDiff < -Math.PI) aDiff += Math.PI * 2;
+
+            if (Math.abs(aDiff) < 0.65 && dist < minDist) {
+              minDist = dist;
+              const dir = aDiff > 0.14 ? "right" : aDiff < -0.14 ? "left" : "center";
+              nearestWall = { dist, angleDiff: aDiff, direction: dir };
+            }
+          }
+        }
+
+        this.cb.onTelemetry?.({
+          speed: Math.round(effectiveSpeed),
+          baseSpeed: this.baseSpeed,
+          distance: Math.round(this.distance),
+          isBoosting: this.boostTimer > 0,
+          proximityWarning: nearestWall
+            ? {
+                distance: Math.round(nearestWall.dist),
+                angleDiff: nearestWall.angleDiff,
+                direction: nearestWall.direction,
+              }
+            : null,
+        });
+      }
+    }
+
     // Tunnel wrap
     this.tunnel1.position.z += moveZ;
     this.tunnel2.position.z += moveZ;
@@ -699,6 +780,8 @@ export class VortexEngine {
             // Gem Combo Multiplier!
             this.comboTimer = this.COMBO_DURATION;
             this.combo = Math.min(5, this.combo + 1);
+            if (this.combo > this.maxCombo) this.maxCombo = this.combo;
+            this.gemsCollected++;
             const points = 10 * this.combo;
             this.score += points;
             this.speed += 1.4;
@@ -710,6 +793,7 @@ export class VortexEngine {
           } else if (obs.type === "shield") {
             // Plasma Shield Power-Up
             this.shieldActive = true;
+            this.powerUpsUsed++;
             this.shipShield.visible = true;
             this.sound.powerupShield();
             this.vibrate([20, 30, 60]);
@@ -717,12 +801,14 @@ export class VortexEngine {
           } else if (obs.type === "magnet") {
             // Vortex Magnet Power-Up
             this.magnetTimer = 6.0;
+            this.powerUpsUsed++;
             this.sound.powerupMagnet();
             this.vibrate([20, 50]);
             this.burst(obs.mesh.position.x, obs.mesh.position.y, obs.z, 0xffcc00, 22);
           } else if (obs.type === "boost") {
             // Hyper Boost Power-Up
             this.boostTimer = 4.0;
+            this.powerUpsUsed++;
             this.sound.powerupBoost();
             this.vibrate([40, 40, 90]);
             this.burst(obs.mesh.position.x, obs.mesh.position.y, obs.z, 0xff3300, 35);
@@ -730,6 +816,7 @@ export class VortexEngine {
             // Wall Collision
             if (this.boostTimer > 0) {
               // Ram through wall while in hyper boost!
+              this.wallsSmashed++;
               this.sound.ramObstacle();
               this.vibrate(25);
               this.burst(obs.mesh.position.x, obs.mesh.position.y, obs.z, 0xff003c, 30);
@@ -761,7 +848,17 @@ export class VortexEngine {
               const best = Math.max(prevBest, this.score);
               if (newBest) localStorage.setItem(BEST_KEY, String(best));
 
-              this.cb.onGameOver({ score: this.score, best, newBest });
+              this.cb.onGameOver({
+                score: this.score,
+                best,
+                newBest,
+                distance: Math.round(this.distance),
+                topSpeed: Math.round(this.topSpeed),
+                maxCombo: this.maxCombo,
+                gemsCollected: this.gemsCollected,
+                wallsSmashed: this.wallsSmashed,
+                powerUpsUsed: this.powerUpsUsed,
+              });
             }
           }
         }

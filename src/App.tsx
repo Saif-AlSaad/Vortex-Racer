@@ -5,6 +5,7 @@ import {
   VortexEngine,
   type GameResult,
   type PowerUpState,
+  type TelemetryData,
 } from "./game/engine";
 import Hud from "./ui/Hud";
 import StartScreen from "./ui/StartScreen";
@@ -35,6 +36,15 @@ export default function App() {
     boostTime: 0,
   });
 
+  // Cockpit Telemetry State
+  const [telemetry, setTelemetry] = useState<TelemetryData>({
+    speed: 40,
+    baseSpeed: 40,
+    distance: 0,
+    isBoosting: false,
+    proximityWarning: null,
+  });
+
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -55,6 +65,9 @@ export default function App() {
       onPowerUps: (pu: PowerUpState) => {
         setPowerUps(pu);
       },
+      onTelemetry: (t: TelemetryData) => {
+        setTelemetry(t);
+      },
     });
     engine.setMuted(localStorage.getItem(MUTE_KEY) === "1");
     engineRef.current = engine;
@@ -73,6 +86,13 @@ export default function App() {
     setCombo(1);
     setComboPercent(0);
     setPowerUps({ shield: false, magnetTime: 0, boostTime: 0 });
+    setTelemetry({
+      speed: 40,
+      baseSpeed: 40,
+      distance: 0,
+      isBoosting: false,
+      proximityWarning: null,
+    });
   }, []);
 
   const toMenu = useCallback(() => {
@@ -155,6 +175,7 @@ export default function App() {
           combo={combo}
           comboPercent={comboPercent}
           powerUps={powerUps}
+          telemetry={telemetry}
         />
       )}
 
